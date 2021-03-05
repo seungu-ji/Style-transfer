@@ -41,29 +41,29 @@ class VGG19(nn.Module):
         output = {}
 
         output['c11'] = F.relu(self.conv1_1(x))
-        output['c12'] = F.relu(self.conv2_1(output['c11']))
+        output['c12'] = F.relu(self.conv1_2(output['c11']))
         output['p1'] = self.pool1(output['c12'])
 
         output['c21'] = F.relu(self.conv2_1(output['p1']))
-        output['c22'] = F.relu(self.conv2_1(output['c21']))
+        output['c22'] = F.relu(self.conv2_2(output['c21']))
         output['p2'] = self.pool1(output['c22'])
 
-        output['c31'] = F.relu(self.conv2_1(output['p2']))
-        output['c32'] = F.relu(self.conv2_1(output['c31']))
-        output['c33'] = F.relu(self.conv2_1(output['c32']))
-        output['c34'] = F.relu(self.conv2_1(output['c33']))
+        output['c31'] = F.relu(self.conv3_1(output['p2']))
+        output['c32'] = F.relu(self.conv3_2(output['c31']))
+        output['c33'] = F.relu(self.conv3_3(output['c32']))
+        output['c34'] = F.relu(self.conv3_4(output['c33']))
         output['p3'] = self.pool1(output['c34'])
 
-        output['c41'] = F.relu(self.conv2_1(output['p3']))
-        output['c42'] = F.relu(self.conv2_1(output['c41']))
-        output['c43'] = F.relu(self.conv2_1(output['c42']))
-        output['c44'] = F.relu(self.conv2_1(output['c43']))
+        output['c41'] = F.relu(self.conv4_1(output['p3']))
+        output['c42'] = F.relu(self.conv4_2(output['c41']))
+        output['c43'] = F.relu(self.conv4_3(output['c42']))
+        output['c44'] = F.relu(self.conv4_4(output['c43']))
         output['p4'] = self.pool1(output['c44'])
         
-        output['c51'] = F.relu(self.conv2_1(output['p4']))
-        output['c52'] = F.relu(self.conv2_1(output['c51']))
-        output['c53'] = F.relu(self.conv2_1(output['c52']))
-        output['c54'] = F.relu(self.conv2_1(output['c53']))
+        output['c51'] = F.relu(self.conv5_1(output['p4']))
+        output['c52'] = F.relu(self.conv5_2(output['c51']))
+        output['c53'] = F.relu(self.conv5_3(output['c52']))
+        output['c54'] = F.relu(self.conv5_4(output['c53']))
         output['p5'] = self.pool1(output['c54'])
         
         return [output[key] for key in output_keys]
