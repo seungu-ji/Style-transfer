@@ -20,7 +20,8 @@ def main():
     parser.add_argument('--style_image', default='./datasets/style/vangogh_starry_night.jpg', type=str, dest='style_image')
     parser.add_argument('--weight_path', default='./weights/vgg_conv.pth', type=str, dest='weight_path')
     parser.add_argument('--img_size', default=512, type=int, dest='img_size')
-    
+    # histogram loss
+    parser.add_argument('--histogram_steps', default=150, type=int, dest='histogram_steps')
 
     args = parser.parse_args()
 
@@ -81,7 +82,12 @@ def main():
     # loss setting
     loss_layer = style_layers + content_layer
     fn_loss = [GramMSELoss()] * len(style_layers) + [nn.MSELoss()] * len(content_layer)
+    if args.histogram_steps is not None:
+      fn_loss += [HistogramLoss(num_steps=150, cuda=True)]
     fn_loss = [loss.to(device) for loss in fn_loss]
+
+    if args.histogram_steps is not None:
+        loss_layer = loss_layer + HistogramLoss(num_steps=args.histogram_steps, cuda=True)
 
     # weight setting
     style_weight = [1e3/n**2 for n in [64,128,256,512,512]]
