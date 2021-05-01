@@ -4,66 +4,26 @@ import torch
 import torch.nn as nn
 
 """
+ARCHITECTURE for ENCODERS
+
 Tuple: Convolution2d => (in_channels, out_channels, kernel_size, stride, padding)
 List: ReflectionPad - Convolution2d Tuple - weight index - ReLU
 "encoder {n} end": index n encoder is end
 "M": MaxPool2d
 """
 encoder_architecture = [
-    # convolution 1
-    [False, (3,3,1,1,0), 0, False],
-    # convolution 2
-    [True, (3,64,3,1,0), 2, True],
-    ## ENCODER 1 END
-    "encoder 1 end",
-    
-
-    # convolution 3
-    [True, (64,64,3,1,0), 5, True],
-    # maxpool 1
-    "M",
-    # convolution 4
-    [True, (64,128,3,1,0), 9, True],
-    ## ENCODER 2 END
-    "encoder 2 end",
-
-
-    # convolution 5
-    [True, (128,128,3,1,0), 12, True],
-    # maxpool 2
-    "M",
-    # convolution 6
-    [True, (128,256,3,1,0), 16, True],
-    ## ENCODER 3 END
-    "encoder 3 end",
-
-
-    # convolution 7
-    [True, (256,256,3,1,0), 19, True],
-    # convolution 8
-    [True, (256,256,3,1,0), 22, True],
-    # convolution 9
-    [True, (256,256,3,1,0), 25, True],
-    # maxpool 3
-    "M",
-    # convolution 10
-    [True, (256,512,3,1,0), 29, True],
-    ## ENCODER 4 END
-    "encoder 4 end",
-
-
-    # convolution 11
-    [True, (512,512,3,1,0), 32, True],
-    # convolution 12
-    [True, (512,512,3,1,0), 35, True],
-    # convolution 13
-    [True, (512,512,3,1,0), 38, True],
-    # maxpool 4
-    "M",
-    # convolution 14
-    [True, (512,512,3,1,0), 42, True],
-    ## ENCODER 5 END
-    "encoder 5 end"
+    ## Encoder1: conv1 - conv2
+    [False, (3,3,1,1,0), 0, False], [True, (3,64,3,1,0), 2, True], "encoder 1 end",
+    ## Encoder2: Encoder1 - conv3 - maxpool - conv4
+    [True, (64,64,3,1,0), 5, True], "M", [True, (64,128,3,1,0), 9, True], "encoder 2 end",
+    ## Encoder3: Encoder2 - conv5 - maxpool - conv6 
+    [True, (128,128,3,1,0), 12, True], "M", [True, (128,256,3,1,0), 16, True], "encoder 3 end",
+    ## Encoder4: Encoder3 - conv7 - conv8 - conv9 - maxpool - conv10
+    [True, (256,256,3,1,0), 19, True], [True, (256,256,3,1,0), 22, True], [True, (256,256,3,1,0), 25, True],
+    "M", [True, (256,512,3,1,0), 29, True], "encoder 4 end",
+    ## Encoder5: Encoder4 - conv11 - conv12 - conv13 - maxpool - conv14
+    [True, (512,512,3,1,0), 32, True], [True, (512,512,3,1,0), 35, True], [True, (512,512,3,1,0), 38, True],
+    "M", [True, (512,512,3,1,0), 42, True], "encoder 5 end"
 ]
 
 
