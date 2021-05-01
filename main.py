@@ -14,6 +14,7 @@ import torchvision
 from torchvision import transforms
 from torch.autograd import Variable
 
+
 import torchvision.transforms.functional as tf
 
 def main():
@@ -182,7 +183,9 @@ def wct_main():
 
     # style transfer
     start_time = time.time()
-    wct_style_transfer(wct, args.alpha, cimg, simg, csf)
+
+    img = wct_style_transfer(wct, args.alpha, cimg, simg, csf)
+    torchvision.utils.save_image(img, 'output.jpg')
     
     end_time = time.time()
     print('Start to End Time: %f' % (end_time - start_time))  

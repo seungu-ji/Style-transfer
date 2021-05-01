@@ -3,6 +3,69 @@
 import torch
 import torch.nn as nn
 
+"""
+Tuple: Convolution2d => (in_channels, out_channels, kernel_size, stride, padding)
+List: ReflectionPad - Convolution2d Tuple - weight index - ReLU
+"encoder {n} end": index n encoder is end
+"M": MaxPool2d
+"""
+encoder_architecture = [
+    # convolution 1
+    [False, (3,3,1,1,0), 0, False],
+    # convolution 2
+    [True, (3,64,3,1,0), 2, True],
+    ## ENCODER 1 END
+    "encoder 1 end",
+    
+
+    # convolution 3
+    [True, (64,64,3,1,0), 5, True],
+    # maxpool 1
+    "M",
+    # convolution 4
+    [True, (64,128,3,1,0), 9, True],
+    ## ENCODER 2 END
+    "encoder 2 end",
+
+
+    # convolution 5
+    [True, (128,128,3,1,0), 12, True],
+    # maxpool 2
+    "M",
+    # convolution 6
+    [True, (128,256,3,1,0), 16, True],
+    ## ENCODER 3 END
+    "encoder 3 end",
+
+
+    # convolution 7
+    [True, (256,256,3,1,0), 19, True],
+    # convolution 8
+    [True, (256,256,3,1,0), 22, True],
+    # convolution 9
+    [True, (256,256,3,1,0), 25, True],
+    # maxpool 3
+    "M",
+    # convolution 10
+    [True, (256,512,3,1,0), 29, True],
+    ## ENCODER 4 END
+    "encoder 4 end",
+
+
+    # convolution 11
+    [True, (512,512,3,1,0), 32, True],
+    # convolution 12
+    [True, (512,512,3,1,0), 35, True],
+    # convolution 13
+    [True, (512,512,3,1,0), 38, True],
+    # maxpool 4
+    "M",
+    # convolution 14
+    [True, (512,512,3,1,0), 42, True],
+    ## ENCODER 5 END
+    "encoder 5 end"
+]
+
 
 def wct_style_transfer(wct, alpha, content_image, style_image, csf):
     sf5 = wct.e5(style_image)
@@ -40,9 +103,9 @@ def wct_style_transfer(wct, alpha, content_image, style_image, csf):
     csf1 = wct.transform(cf1,sf1,csf,alpha)
     im1 = wct.d1(csf1)
 
-    torch.utils.save_image(im1.data.cpu().float(), 'output.jpg')
+    #torchvision.utils.save_image(im1.data.cpu().float(), 'output.jpg')
 
-    return
+    return im1.data.cpu().float()
 
 ## Whitening and Coloring Transform
 class WCT(nn.Module):
@@ -65,16 +128,16 @@ class WCT(nn.Module):
         decoder5_param = torch.load(decoder_path5)
 
         self.e1 = encoder1(encoder1_param)
-        self.e2 = encoder1(encoder2_param)
-        self.e3 = encoder1(encoder3_param)
-        self.e4 = encoder1(encoder4_param)
-        self.e5 = encoder1(encoder5_param)
-
         self.d1 = decoder1(decoder1_param)
+        self.e2 = encoder2(encoder2_param)
         self.d2 = decoder2(decoder2_param)
+        self.e3 = encoder3(encoder3_param)
         self.d3 = decoder3(decoder3_param)
+        self.e4 = encoder4(encoder4_param)
         self.d4 = decoder4(decoder4_param)
+        self.e5 = encoder5(encoder5_param)
         self.d5 = decoder5(decoder5_param)
+
 
     # content feature, style feature
     def whiten_and_color(self, cf, sf):
@@ -155,10 +218,11 @@ class RCR2d(nn.Module):
         if reflect:
             layers += [nn.ReflectionPad2d((1,1,1,1))]
 
-        self.conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=padding)
-        self.conv.weight = torch.nn.Parameter(vgg['{}.weight'.format(num_param)].float())
-        self.conv.bias = torch.nn.Parameter(vgg['{}.bias'.format(num_param)].float())
-        layers += [self.conv]
+        # self.conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=padding)
+        conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=padding)
+        conv.weight = torch.nn.Parameter(vgg['{}.weight'.format(num_param)].float())
+        conv.bias = torch.nn.Parameter(vgg['{}.bias'.format(num_param)].float())
+        layers += [conv]
 
         if relu:
             layers += [nn.ReLU(inplace=True)]
@@ -172,6 +236,203 @@ class RCR2d(nn.Module):
 
 ## Encoder
 class encoder1(nn.Module):
+    def __init__(self, vgg):
+        super(encoder1, self).__init__()
+        self.architecture = encoder_architecture
+        self.network = self._create_conv_layers(self.architecture, vgg)
+
+    def _create_conv_layers(self, architecture, vgg):
+        layers = []
+
+        for x in architecture:
+            if type(x) == list:
+                reflec = x[0]
+                conv_layers = x[1]
+                weight_index = x[2]
+                activation = x[3]
+
+                if reflec:
+                    layers += [nn.ReflectionPad2d((1,1,1,1))]
+                
+                conv = nn.Conv2d(in_channels=conv_layers[0], out_channels=conv_layers[1], kernel_size=conv_layers[2], stride=conv_layers[3], padding=conv_layers[4])
+                conv.weight = torch.nn.Parameter(vgg['{}.weight'.format(weight_index)].float())
+                conv.bias = torch.nn.Parameter(vgg['{}.bias'.format(weight_index)].float())
+                layers += [conv]
+
+                if activation:
+                    layers += [nn.ReLU(inplace=True)]
+
+            elif x == "M":
+                layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
+                
+
+            elif x == "encoder 1 end":
+                break
+
+        return nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.network(x)
+
+
+class encoder2(nn.Module):
+    def __init__(self, vgg):
+        super(encoder2, self).__init__()
+        self.architecture = encoder_architecture
+        self.network = self._create_conv_layers(self.architecture, vgg)
+
+    def _create_conv_layers(self, architecture, vgg):
+        layers = []
+
+        for x in architecture:
+            if type(x) == list:
+                reflec = x[0]
+                conv_layers = x[1]
+                weight_index = x[2]
+                activation = x[3]
+
+                if reflec:
+                    layers += [nn.ReflectionPad2d((1,1,1,1))]
+                
+                conv = nn.Conv2d(in_channels=conv_layers[0], out_channels=conv_layers[1], kernel_size=conv_layers[2], stride=conv_layers[3], padding=conv_layers[4])
+                conv.weight = torch.nn.Parameter(vgg['{}.weight'.format(weight_index)].float())
+                conv.bias = torch.nn.Parameter(vgg['{}.bias'.format(weight_index)].float())
+                layers += [conv]
+
+                if activation:
+                    layers += [nn.ReLU(inplace=True)]
+
+            elif x == "M":
+                layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
+                
+
+            elif x == "encoder 2 end":
+                break
+
+        return nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.network(x)
+
+
+class encoder3(nn.Module):
+    def __init__(self, vgg):
+        super(encoder3, self).__init__()
+        self.architecture = encoder_architecture
+        self.network = self._create_conv_layers(self.architecture, vgg)
+
+    def _create_conv_layers(self, architecture, vgg):
+        layers = []
+
+        for x in architecture:
+            if type(x) == list:
+                reflec = x[0]
+                conv_layers = x[1]
+                weight_index = x[2]
+                activation = x[3]
+
+                if reflec:
+                    layers += [nn.ReflectionPad2d((1,1,1,1))]
+                
+                conv = nn.Conv2d(in_channels=conv_layers[0], out_channels=conv_layers[1], kernel_size=conv_layers[2], stride=conv_layers[3], padding=conv_layers[4])
+                conv.weight = torch.nn.Parameter(vgg['{}.weight'.format(weight_index)].float())
+                conv.bias = torch.nn.Parameter(vgg['{}.bias'.format(weight_index)].float())
+                layers += [conv]
+
+                if activation:
+                    layers += [nn.ReLU(inplace=True)]
+
+            elif x == "M":
+                layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
+
+            elif x == "encoder 3 end":
+                break
+
+        return nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.network(x)
+
+
+class encoder4(nn.Module):
+    def __init__(self, vgg):
+        super(encoder4, self).__init__()
+        self.architecture = encoder_architecture
+        self.network = self._create_conv_layers(self.architecture, vgg)
+
+    def _create_conv_layers(self, architecture, vgg):
+        layers = []
+
+        for x in architecture:
+            if type(x) == list:
+                reflec = x[0]
+                conv_layers = x[1]
+                weight_index = x[2]
+                activation = x[3]
+
+                if reflec:
+                    layers += [nn.ReflectionPad2d((1,1,1,1))]
+                
+                conv = nn.Conv2d(in_channels=conv_layers[0], out_channels=conv_layers[1], kernel_size=conv_layers[2], stride=conv_layers[3], padding=conv_layers[4])
+                conv.weight = torch.nn.Parameter(vgg['{}.weight'.format(weight_index)].float())
+                conv.bias = torch.nn.Parameter(vgg['{}.bias'.format(weight_index)].float())
+                layers += [conv]
+
+                if activation:
+                    layers += [nn.ReLU(inplace=True)]
+
+            elif x == "M":
+                layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
+
+            elif x == "encoder 4 end":
+                break
+
+        return nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.network(x)
+
+
+class encoder5(nn.Module):
+    def __init__(self, vgg):
+        super(encoder5, self).__init__()
+        self.architecture = encoder_architecture
+        self.network = self._create_conv_layers(self.architecture, vgg)
+
+    def _create_conv_layers(self, architecture, vgg):
+        layers = []
+
+        for x in architecture:
+            if type(x) == list:
+                reflec = x[0]
+                conv_layers = x[1]
+                weight_index = x[2]
+                activation = x[3]
+
+                if reflec:
+                    layers += [nn.ReflectionPad2d((1,1,1,1))]
+                
+                conv = nn.Conv2d(in_channels=conv_layers[0], out_channels=conv_layers[1], kernel_size=conv_layers[2], stride=conv_layers[3], padding=conv_layers[4])
+                conv.weight = torch.nn.Parameter(vgg['{}.weight'.format(weight_index)].float())
+                conv.bias = torch.nn.Parameter(vgg['{}.bias'.format(weight_index)].float())
+                layers += [conv]
+
+                if activation:
+                    layers += [nn.ReLU(inplace=True)]
+
+            elif x == "M":
+                layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
+
+            elif x == "encoder 5 end":
+                break
+
+        return nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.network(x)
+
+
+"""class encoder1(nn.Module):
     def __init__(self, vgg):
         super(encoder1, self).__init__()
         self.conv1 = RCR2d(vgg, 0, 3, 3, 1, 1, 0, False, False)
@@ -373,7 +634,7 @@ class encoder5(nn.Module):
 
         x = self.conv14(x)
 
-        return x
+        return x"""
 
 
 ## Decoder
