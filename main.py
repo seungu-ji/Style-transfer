@@ -162,13 +162,23 @@ def wct_main():
     paths = encoder1, encoder2, encoder3, encoder4, encoder5, decoder1, decoder2, decoder3, decoder4, decoder5
     wct = WCT(paths)
 
+    
     content_image = Image.open(args.content_image).resize((args.img_size, args.img_size))
+    print(content_image.mode)
+    # if image mode is RGBA, CMYK etc.. => change RGB
+    if content_image.mode != 'RGB':
+        content_image = content_image.convert('RGB')
     content_image = tf.to_tensor(content_image)
     content_image.unsqueeze_(0)
+    print('content_iamge shape: {}'.format(content_image.shape))
 
     style_image = Image.open(args.style_image).resize((args.img_size, args.img_size))
+    # if image mode is RGBA, CMYK etc.. => change RGB
+    if style_image.mode != 'RGB':
+        style_image = style_image.convert('RGB')
     style_image = tf.to_tensor(style_image)
     style_image.unsqueeze_(0)
+    print('style_image shape: {}'.format(style_image.shape))
     
     csf = torch.Tensor()
 
@@ -184,7 +194,7 @@ def wct_main():
     # style transfer
     start_time = time.time()
 
-    img = wct_style_transfer(wct, args.alpha, cimg, simg, csf)
+    img = wct_style_transfer(wct, args.alpha, cimg, simg, csf).to(device)
     torchvision.utils.save_image(img, 'output.jpg')
     
     end_time = time.time()
